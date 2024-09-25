@@ -42,6 +42,8 @@ public class EventBridgeSinkConfig extends AbstractConfig {
   static final String AWS_EVENTBUS_RESOURCES_CONFIG = "aws.eventbridge.eventbus.resources";
   static final String AWS_OFFLOADING_DEFAULT_S3_BUCKET =
       "aws.eventbridge.offloading.default.s3.bucket";
+  static final String AWS_OFFLOADING_DEFAULT_S3_PREFIX =
+      "aws.eventbridge.offloading.default.s3.prefix";
   static final String AWS_OFFLOADING_DEFAULT_FIELDREF =
       "aws.eventbridge.offloading.default.fieldref";
 
@@ -69,6 +71,8 @@ public class EventBridgeSinkConfig extends AbstractConfig {
   public static final String AWS_DETAIL_TYPES_DEFAULT = "kafka-connect-${topic}";
   public static final String AWS_OFFLOADING_S3_DEFAULT_BUCKET_DOC =
       "The S3 bucket to offload matched record value by JSON Path";
+  public static final String AWS_OFFLOADING_S3_DEFAULT_PREFIX_DOC =
+      "The S3 prefix to offload matched record value by JSON Path";
   public static final String AWS_OFFLOADING_DEFAULT_FIELDREF_DOC =
       "The JSON Path to offload record value";
   public static final String AWS_OFFLOADING_DEFAULT_FIELDREF_DEFAULT =
@@ -111,6 +115,7 @@ public class EventBridgeSinkConfig extends AbstractConfig {
   public String detailTypeMapperClass;
   public String timeMapperClass;
   public String offloadingDefaultS3Bucket;
+  public String offloadingDefaultS3Prefix;
   public String offloadingDefaultFieldRef;
 
   public EventBridgeSinkConfig(final Map<?, ?> originalProps) {
@@ -130,6 +135,7 @@ public class EventBridgeSinkConfig extends AbstractConfig {
     this.detailTypeMapperClass = getString(AWS_DETAIL_TYPES_MAPPER_CLASS);
     this.timeMapperClass = getString(AWS_TIME_MAPPER_CLASS);
     this.offloadingDefaultS3Bucket = getString(AWS_OFFLOADING_DEFAULT_S3_BUCKET);
+    this.offloadingDefaultS3Prefix = getString(AWS_OFFLOADING_DEFAULT_S3_PREFIX);
     this.offloadingDefaultFieldRef = getString(AWS_OFFLOADING_DEFAULT_FIELDREF);
 
     var detailTypes = getList(AWS_DETAIL_TYPES_CONFIG);
@@ -145,7 +151,7 @@ public class EventBridgeSinkConfig extends AbstractConfig {
         "EventBridge properties: connectorId={} eventBusArn={} eventBusRegion={} eventBusEndpointURI={} "
             + "eventBusMaxRetries={} eventBusRetriesDelay={} eventBusResources={} "
             + "eventBusEndpointID={} roleArn={} roleSessionName={} roleExternalID={} "
-            + "offloadingDefaultS3Bucket={} offloadingDefaultFieldRef={} detailTypeMapperClass={} timeMapperClass={}",
+            + "offloadingDefaultS3Bucket={} offloadingDefaultS3Prefix={} offloadingDefaultFieldRef={} detailTypeMapperClass={} timeMapperClass={}",
         connectorId,
         eventBusArn,
         region,
@@ -158,6 +164,7 @@ public class EventBridgeSinkConfig extends AbstractConfig {
         connectorId,
         externalId,
         offloadingDefaultS3Bucket,
+        offloadingDefaultS3Prefix,
         offloadingDefaultFieldRef,
         detailTypeMapperClass,
         timeMapperClass);
@@ -234,6 +241,12 @@ public class EventBridgeSinkConfig extends AbstractConfig {
         "",
         Importance.MEDIUM,
         AWS_OFFLOADING_S3_DEFAULT_BUCKET_DOC);
+    configDef.define(
+        AWS_OFFLOADING_DEFAULT_S3_PREFIX,
+        Type.STRING,
+        "",
+        Importance.MEDIUM,
+        AWS_OFFLOADING_S3_DEFAULT_PREFIX_DOC);
     configDef.define(
         AWS_OFFLOADING_DEFAULT_FIELDREF,
         Type.STRING,

@@ -118,11 +118,13 @@ public class EventBridgeWriter {
               .region(Region.of(this.config.region))
               .build();
       var bucketName = StringUtils.trim(config.offloadingDefaultS3Bucket);
+      var prefix = StringUtils.trim(config.offloadingDefaultS3Prefix);
       var jsonPathExp = StringUtils.trim(config.offloadingDefaultFieldRef);
 
       log.info(
           "S3 offloading is activated with bucket: {} and JSON path: {}", bucketName, jsonPathExp);
-      offloading = new S3EventBridgeEventDetailValueOffloading(s3client, bucketName, jsonPathExp);
+      offloading =
+          new S3EventBridgeEventDetailValueOffloading(s3client, bucketName, prefix, jsonPathExp);
     } else {
       log.info("S3 offloading is deactivated");
       offloading = new NoOpEventBridgeEventDetailValueOffloading();

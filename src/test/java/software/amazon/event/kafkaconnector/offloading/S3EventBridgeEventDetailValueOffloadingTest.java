@@ -37,6 +37,7 @@ import static software.amazon.event.kafkaconnector.EventBridgeResult.ErrorType.R
 import static software.amazon.event.kafkaconnector.offloading.S3EventBridgeEventDetailValueOffloading.JSON_PATH_PREFIX;
 
 import com.jayway.jsonpath.JsonPath;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -84,6 +85,7 @@ import software.amazon.event.kafkaconnector.util.MappedSinkRecord;
 class S3EventBridgeEventDetailValueOffloadingTest {
 
   private final String BUCKET = "test";
+  private final String PREFIX = "prefix";
 
   private static final Schema ORDER_SCHEMA =
       SchemaBuilder.struct()
@@ -116,7 +118,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
             IllegalArgumentException.class,
             () ->
                 new S3EventBridgeEventDetailValueOffloading(
-                    s3Client, BUCKET, jsonPathExp, s3ObjectKeyCache, UUID::randomUUID));
+                    s3Client, BUCKET, PREFIX, jsonPathExp, s3ObjectKeyCache, UUID::randomUUID));
     assertThat(exception).hasMessage(format("Invalid JSON Path '%s'.", jsonPathExp));
   }
 
@@ -128,7 +130,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
             IllegalArgumentException.class,
             () ->
                 new S3EventBridgeEventDetailValueOffloading(
-                    s3Client, BUCKET, jsonPathExp, s3ObjectKeyCache, UUID::randomUUID));
+                    s3Client, BUCKET, PREFIX, jsonPathExp, s3ObjectKeyCache, UUID::randomUUID));
     assertThat(exception)
         .hasMessage(
             format("JSON Path must start with '%s' but is '%s'.", JSON_PATH_PREFIX, jsonPathExp));
@@ -142,7 +144,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
             IllegalArgumentException.class,
             () ->
                 new S3EventBridgeEventDetailValueOffloading(
-                    s3Client, BUCKET, jsonPathExp, s3ObjectKeyCache, UUID::randomUUID));
+                    s3Client, BUCKET, PREFIX, jsonPathExp, s3ObjectKeyCache, UUID::randomUUID));
     assertThat(exception)
         .hasMessage(format("JSON Path must be definite but '%s' is not.", jsonPathExp));
   }
@@ -170,6 +172,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
         new S3EventBridgeEventDetailValueOffloading(
                 s3Client,
                 BUCKET,
+                PREFIX,
                 "$.detail.value",
                 s3ObjectKeyCache,
                 () -> UUID.fromString("2d10c6f6-31e9-43b4-8706-51b4cf5534d8"))
@@ -180,7 +183,8 @@ class S3EventBridgeEventDetailValueOffloadingTest {
     assertThat(putObjectRequestCaptor.getAllValues())
         .hasSize(1)
         .extracting(PutObjectRequest::bucket, PutObjectRequest::key)
-        .containsExactly(tuple("test", "2d10c6f6-31e9-43b4-8706-51b4cf5534d8"));
+        .containsExactly(
+            tuple("test", PREFIX + File.separator + "2d10c6f6-31e9-43b4-8706-51b4cf5534d8"));
     assertThat(requestBodyCaptor.getAllValues())
         .hasSize(1)
         .extracting(requestBodyAsString())
@@ -203,7 +207,8 @@ class S3EventBridgeEventDetailValueOffloadingTest {
                             hasNoJsonPath("$.value"),
                             hasJsonPath(
                                 "$.dataref",
-                                equalTo("arn:aws:s3:::test/2d10c6f6-31e9-43b4-8706-51b4cf5534d8")),
+                                equalTo(
+                                    "arn:aws:s3:::test/prefix/2d10c6f6-31e9-43b4-8706-51b4cf5534d8")),
                             hasJsonPath("$.datarefJsonPath", equalTo("$.detail.value"))))),
             atIndex(0));
     assertThat(actual.errors).isEmpty();
@@ -221,6 +226,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
         new S3EventBridgeEventDetailValueOffloading(
                 s3Client,
                 BUCKET,
+                PREFIX,
                 "$.detail.value",
                 s3ObjectKeyCache,
                 () -> UUID.fromString("fd807e9d-f92c-4c45-8bbb-f8164cc75b7e"))
@@ -257,6 +263,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
         new S3EventBridgeEventDetailValueOffloading(
                 s3Client,
                 BUCKET,
+                PREFIX,
                 "$.detail.value.orderItems",
                 s3ObjectKeyCache,
                 () -> UUID.fromString("d9d624dc-8452-411e-935f-edc3d62cbae2"))
@@ -267,7 +274,8 @@ class S3EventBridgeEventDetailValueOffloadingTest {
     assertThat(putObjectRequestCaptor.getAllValues())
         .hasSize(1)
         .extracting(PutObjectRequest::bucket, PutObjectRequest::key)
-        .containsExactly(tuple("test", "d9d624dc-8452-411e-935f-edc3d62cbae2"));
+        .containsExactly(
+            tuple("test", PREFIX + File.separator + "d9d624dc-8452-411e-935f-edc3d62cbae2"));
     assertThat(requestBodyCaptor.getAllValues())
         .hasSize(1)
         .extracting(requestBodyAsString())
@@ -284,7 +292,8 @@ class S3EventBridgeEventDetailValueOffloadingTest {
                         hasNoJsonPath("orderItems"),
                         hasJsonPath("orderCreatedTime", equalTo("Wed Dec 27 18:51:39 CET 2023")))),
                 hasJsonPath(
-                    "$.dataref", equalTo("arn:aws:s3:::test/d9d624dc-8452-411e-935f-edc3d62cbae2")),
+                    "$.dataref",
+                    equalTo("arn:aws:s3:::test/prefix/d9d624dc-8452-411e-935f-edc3d62cbae2")),
                 hasJsonPath("$.datarefJsonPath", equalTo("$.detail.value.orderItems")))));
     assertThat(actual.errors).isEmpty();
   }
@@ -340,6 +349,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
         new S3EventBridgeEventDetailValueOffloading(
                 s3Client,
                 BUCKET,
+                PREFIX,
                 "$.detail.value.orderHints",
                 s3ObjectKeyCache,
                 () -> UUID.fromString("fbdacb19-441e-479b-a347-f7c5f82ccd70"))
@@ -350,7 +360,8 @@ class S3EventBridgeEventDetailValueOffloadingTest {
     assertThat(putObjectRequestCaptor.getAllValues())
         .hasSize(1)
         .extracting(PutObjectRequest::bucket, PutObjectRequest::key)
-        .containsExactly(tuple("test", "fbdacb19-441e-479b-a347-f7c5f82ccd70"));
+        .containsExactly(
+            tuple("test", PREFIX + File.separator + "fbdacb19-441e-479b-a347-f7c5f82ccd70"));
     assertThat(requestBodyCaptor.getAllValues())
         .hasSize(1)
         .extracting(requestBodyAsString())
@@ -367,7 +378,8 @@ class S3EventBridgeEventDetailValueOffloadingTest {
                         hasJsonPath("orderItems", equalTo(List.of("item-1", "item-2"))),
                         hasJsonPath("orderCreatedTime", equalTo("Wed Dec 27 18:51:39 CET 2023")))),
                 hasJsonPath(
-                    "$.dataref", equalTo("arn:aws:s3:::test/fbdacb19-441e-479b-a347-f7c5f82ccd70")),
+                    "$.dataref",
+                    equalTo("arn:aws:s3:::test/prefix/fbdacb19-441e-479b-a347-f7c5f82ccd70")),
                 hasJsonPath("$.datarefJsonPath", equalTo("$.detail.value.orderHints")))));
     assertThat(actual.errors).isEmpty();
   }
@@ -389,6 +401,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
         new S3EventBridgeEventDetailValueOffloading(
                 s3Client,
                 BUCKET,
+                PREFIX,
                 "$.detail.value.orderId",
                 s3ObjectKeyCache,
                 () -> UUID.fromString("eb8421ef-3b46-4ed7-806f-7326546ed12c"))
@@ -425,6 +438,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
         new S3EventBridgeEventDetailValueOffloading(
                 s3Client,
                 BUCKET,
+                PREFIX,
                 "$.detail.value.orderCreatedTime",
                 s3ObjectKeyCache,
                 () -> UUID.fromString("f3dd06ed-1daf-47ff-ab3e-f273158469aa"))
@@ -464,6 +478,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
         new S3EventBridgeEventDetailValueOffloading(
                 s3Client,
                 BUCKET,
+                PREFIX,
                 "$.detail.value",
                 s3ObjectKeyCache,
                 () -> UUID.fromString("55443a4d-4d15-49ef-a2b0-d89657a71d8a"))
@@ -474,7 +489,8 @@ class S3EventBridgeEventDetailValueOffloadingTest {
     assertThat(putObjectRequestCaptor.getAllValues())
         .hasSize(1)
         .extracting(PutObjectRequest::bucket, PutObjectRequest::key)
-        .containsExactly(tuple("test", "55443a4d-4d15-49ef-a2b0-d89657a71d8a"));
+        .containsExactly(
+            tuple("test", PREFIX + File.separator + "55443a4d-4d15-49ef-a2b0-d89657a71d8a"));
     assertThat(requestBodyCaptor.getAllValues())
         .hasSize(1)
         .extracting(requestBodyAsString())
@@ -487,7 +503,8 @@ class S3EventBridgeEventDetailValueOffloadingTest {
             allOf(
                 hasNoJsonPath("$.value"),
                 hasJsonPath(
-                    "$.dataref", equalTo("arn:aws:s3:::test/55443a4d-4d15-49ef-a2b0-d89657a71d8a")),
+                    "$.dataref",
+                    equalTo("arn:aws:s3:::test/prefix/55443a4d-4d15-49ef-a2b0-d89657a71d8a")),
                 hasJsonPath("$.datarefJsonPath", equalTo("$.detail.value")))));
     assertThat(actual.errors).isEmpty();
   }
@@ -504,6 +521,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
         new S3EventBridgeEventDetailValueOffloading(
                 s3Client,
                 BUCKET,
+                PREFIX,
                 "$.detail.value.key",
                 s3ObjectKeyCache,
                 () -> UUID.fromString("37c43d04-147f-4e83-9890-b41fad756377"))
@@ -547,7 +565,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
 
     var actual =
         new S3EventBridgeEventDetailValueOffloading(
-                s3Client, BUCKET, "$.detail.value", s3ObjectKeyCache, UUID::randomUUID)
+                s3Client, BUCKET, PREFIX, "$.detail.value", s3ObjectKeyCache, UUID::randomUUID)
             .apply(mappedSinkRecords);
 
     assertThat(actual.success).isEmpty();
@@ -588,7 +606,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
 
     var actual =
         new S3EventBridgeEventDetailValueOffloading(
-                s3Client, BUCKET, "$.detail.value", s3ObjectKeyCache, UUID::randomUUID)
+                s3Client, BUCKET, PREFIX, "$.detail.value", s3ObjectKeyCache, UUID::randomUUID)
             .apply(mappedSinkRecords);
 
     assertThat(actual.success).isEmpty();
@@ -634,7 +652,12 @@ class S3EventBridgeEventDetailValueOffloadingTest {
 
     var actual =
         new S3EventBridgeEventDetailValueOffloading(
-                s3Client, BUCKET, "$.detail.value.orderItems", new FifoCache<>(2), idGenerator)
+                s3Client,
+                BUCKET,
+                PREFIX,
+                "$.detail.value.orderItems",
+                new FifoCache<>(2),
+                idGenerator)
             .apply(mappedSinkRecords);
 
     verify(s3Client, times(2))
@@ -643,15 +666,15 @@ class S3EventBridgeEventDetailValueOffloadingTest {
     assertThat(putObjectRequestCaptor.getAllValues())
         .extracting(PutObjectRequest::bucket, PutObjectRequest::key)
         .containsExactly(
-            tuple("test", "0c6ec17a-19e8-4dd6-8696-f91e8edc7db0"),
-            tuple("test", "322abe30-4839-4ea7-a547-c2df7be43aac"));
+            tuple("test", PREFIX + File.separator + "0c6ec17a-19e8-4dd6-8696-f91e8edc7db0"),
+            tuple("test", PREFIX + File.separator + "322abe30-4839-4ea7-a547-c2df7be43aac"));
 
     assertThat(actual.success)
         .extracting(it -> dataref(it.getValue().detail()))
         .containsExactly(
-            "arn:aws:s3:::test/0c6ec17a-19e8-4dd6-8696-f91e8edc7db0",
-            "arn:aws:s3:::test/322abe30-4839-4ea7-a547-c2df7be43aac",
-            "arn:aws:s3:::test/0c6ec17a-19e8-4dd6-8696-f91e8edc7db0");
+            "arn:aws:s3:::test/prefix/0c6ec17a-19e8-4dd6-8696-f91e8edc7db0",
+            "arn:aws:s3:::test/prefix/322abe30-4839-4ea7-a547-c2df7be43aac",
+            "arn:aws:s3:::test/prefix/0c6ec17a-19e8-4dd6-8696-f91e8edc7db0");
 
     assertThat(actual.errors).isEmpty();
   }
@@ -692,7 +715,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
 
     var offloading =
         new S3EventBridgeEventDetailValueOffloading(
-            s3Client, BUCKET, "$.detail.value.orderItems", new FifoCache<>(2), idGenerator);
+            s3Client, BUCKET, PREFIX, "$.detail.value.orderItems", new FifoCache<>(2), idGenerator);
 
     assertThat(offloading.apply(mappedSinkRecords).errors).hasSize(1);
 
@@ -704,12 +727,12 @@ class S3EventBridgeEventDetailValueOffloadingTest {
     assertThat(putObjectRequestCaptor.getAllValues())
         .extracting(PutObjectRequest::bucket, PutObjectRequest::key)
         .containsExactly(
-            tuple("test", "0c6ec17a-19e8-4dd6-8696-f91e8edc7db0"),
-            tuple("test", "322abe30-4839-4ea7-a547-c2df7be43aac"));
+            tuple("test", PREFIX + File.separator + "0c6ec17a-19e8-4dd6-8696-f91e8edc7db0"),
+            tuple("test", PREFIX + File.separator + "322abe30-4839-4ea7-a547-c2df7be43aac"));
 
     assertThat(actual.success)
         .extracting(it -> dataref(it.getValue().detail()))
-        .containsExactly("arn:aws:s3:::test/322abe30-4839-4ea7-a547-c2df7be43aac");
+        .containsExactly("arn:aws:s3:::test/prefix/322abe30-4839-4ea7-a547-c2df7be43aac");
 
     assertThat(actual.errors).isEmpty();
   }
