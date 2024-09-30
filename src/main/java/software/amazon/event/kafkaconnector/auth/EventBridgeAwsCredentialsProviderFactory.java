@@ -12,7 +12,6 @@ import org.apache.kafka.common.Configurable;
 import org.slf4j.Logger;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.profiles.ProfileFileSupplier;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
@@ -85,10 +84,6 @@ public abstract class EventBridgeAwsCredentialsProviderFactory {
   private static DefaultCredentialsProvider getDefaultCredentialsProvider(
       EventBridgeSinkConfig config) {
     var builder = DefaultCredentialsProvider.builder();
-
-    // Leverage DefaultSupplier to automatically reload credentials on file refresh
-    // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-profiles.html#profile-reloading
-    builder.profileFile(ProfileFileSupplier.defaultSupplier());
 
     var profileName = config.profileName;
     if (!profileName.isBlank()) {

@@ -21,6 +21,7 @@ import static software.amazon.event.kafkaconnector.cache.MessageDigestCacheKey.s
 
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import java.io.File;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -67,6 +68,7 @@ public class S3EventBridgeEventDetailValueOffloading
               );
 
   private final String bucketName;
+  private final String prefix;
   private final S3AsyncClient client;
 
   private final Cache<MessageDigestCacheKey, UUID> s3ObjectKeyCache;
@@ -80,11 +82,13 @@ public class S3EventBridgeEventDetailValueOffloading
   public S3EventBridgeEventDetailValueOffloading(
       final S3AsyncClient client,
       final String bucketName,
+      final String prefix,
       final String jsonPathExp,
       final Cache<MessageDigestCacheKey, UUID> s3ObjectKeyCache,
       final Supplier<UUID> idGenerator) {
 
     this.bucketName = bucketName;
+    this.prefix = prefix;
     this.client = client;
 
     this.s3ObjectKeyCache = s3ObjectKeyCache;
@@ -95,9 +99,13 @@ public class S3EventBridgeEventDetailValueOffloading
   }
 
   public S3EventBridgeEventDetailValueOffloading(
-      final S3AsyncClient client, final String bucketName, final String jsonPathExp) {
+      final S3AsyncClient client,
+      final String bucketName,
+      final String prefix,
+      final String jsonPathExp) {
 
     this.bucketName = bucketName;
+    this.prefix = prefix;
     this.client = client;
 
     this.s3ObjectKeyCache = new FifoCache<>(MAX_CACHE_SIZE);
@@ -188,7 +196,15 @@ public class S3EventBridgeEventDetailValueOffloading
   }
 
   private String s3ArnOf(UUID uuid) {
-    return format("arn:aws:s3:::%s/%s", bucketName, uuid);
+    String s3Arn;
+
+    if (prefix != null && !prefix.isEmpty()) {
+      s3Arn = format("arn:aws:s3:::%s/%s/%s", bucketName, prefix, uuid);
+    } else {
+      s3Arn = format("arn:aws:s3:::%s/%s", bucketName, uuid);
+    }
+
+    return s3Arn;
   }
 
   private UUID putS3Object(final String payload) {
@@ -199,8 +215,14 @@ public class S3EventBridgeEventDetailValueOffloading
             ThrowingFunction.wrap(
                 (sha512) -> {
                   var id = idGenerator.get();
+
+                  String objectKey = id.toString();
+                  if (prefix != null && !prefix.isEmpty()) {
+                    objectKey = prefix + File.separator + id;
+                  }
+
                   var request =
-                      PutObjectRequest.builder().bucket(bucketName).key(id.toString()).build();
+                      PutObjectRequest.builder().bucket(bucketName).key(objectKey).build();
 
                   var body = fromString(payload, UTF_8);
 
