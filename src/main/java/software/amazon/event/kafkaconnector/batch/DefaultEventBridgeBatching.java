@@ -17,26 +17,26 @@ import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
 import software.amazon.event.kafkaconnector.logging.ContextAwareLoggerFactory;
 import software.amazon.event.kafkaconnector.util.MappedSinkRecord;
 
 /**
  * Default batching strategy for a stream of {@link MappedSinkRecord}&lt;{@link
- * PutEventsRequestEntry}&gt; (equipped with the associated <code>SinkRecord</code>) to send to
- * EventBridge. The strategy generates a stream of lists of <code>PutEventsRequestEntry</code>}
- * (batch) in which every batch:
+ * PutPartnerEventsRequestEntry}&gt; (equipped with the associated <code>SinkRecord</code>) to send
+ * to EventBridge. The strategy generates a stream of lists of <code>PutPartnerEventsRequestEntry
+ * </code>} (batch) in which every batch:
  *
  * <ul>
  *   <li>contains at most 10 items with overall size &le; 256Kb according to this <a
  *       href="https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-putevent-size.html">calculation</a>,
  *       or
  *   <li>one item which size is &ge; 256Kb to isolate events exceeding the EventBridge event size
- *       limit which are later handled by PutEvents calls e.g., dropping or sending to a dead-letter
- *       topic if configured.
+ *       limit which are later handled by PutPartnerEvents calls e.g., dropping or sending to a
+ *       dead-letter topic if configured.
  * </ul>
  *
- * If a batch contains an <code>PutEventsRequestEntry</code> &gt; 256Kb then a log message is
+ * If a batch contains an <code>PutPartnerEventsRequestEntry</code> &gt; 256Kb then a log message is
  * emitted with level <code>WARN</code> on logger <code>
  * software.amazon.event.kafkaconnector.batch.DefaultEventBridgeBatching</code>.
  *
@@ -49,34 +49,35 @@ public class DefaultEventBridgeBatching implements EventBridgeBatchingStrategy {
       ContextAwareLoggerFactory.getLogger(DefaultEventBridgeBatching.class);
 
   private final Collector<
-          MappedSinkRecord<PutEventsRequestEntry>,
+          MappedSinkRecord<PutPartnerEventsRequestEntry>,
           Accumulator,
-          Stream<List<MappedSinkRecord<PutEventsRequestEntry>>>>
-      collector = new PutEventsRequestEntrySizeCollector();
+          Stream<List<MappedSinkRecord<PutPartnerEventsRequestEntry>>>>
+      collector = new PutPartnerEventsRequestEntrySizeCollector();
 
   /**
    * Generates a stream of batches from the provided input by the implemented strategy.
    *
-   * @param records stream of {@link MappedSinkRecord}&lt;{@link PutEventsRequestEntry}&gt; where
-   *     batching will be applied
-   * @return stream of batched {@link MappedSinkRecord}&lt;{@link PutEventsRequestEntry}&gt; where
-   *     each batch is either limited by its accumulated byte size or by the maximum number of items
+   * @param records stream of {@link MappedSinkRecord}&lt;{@link PutPartnerEventsRequestEntry}&gt;
+   *     where batching will be applied
+   * @return stream of batched {@link MappedSinkRecord}&lt;{@link PutPartnerEventsRequestEntry}&gt;
+   *     where each batch is either limited by its accumulated byte size or by the maximum number of
+   *     items
    * @throws IllegalArgumentException if input stream is parallel
    */
   @Override
-  public Stream<List<MappedSinkRecord<PutEventsRequestEntry>>> apply(
-      Stream<MappedSinkRecord<PutEventsRequestEntry>> records) {
+  public Stream<List<MappedSinkRecord<PutPartnerEventsRequestEntry>>> apply(
+      Stream<MappedSinkRecord<PutPartnerEventsRequestEntry>> records) {
     if (records.isParallel()) {
       throw new IllegalArgumentException("Stream must not be parallel.");
     }
     return records.collect(collector);
   }
 
-  static class PutEventsRequestEntrySizeCollector
+  static class PutPartnerEventsRequestEntrySizeCollector
       implements Collector<
-          MappedSinkRecord<PutEventsRequestEntry>,
+          MappedSinkRecord<PutPartnerEventsRequestEntry>,
           Accumulator,
-          Stream<List<MappedSinkRecord<PutEventsRequestEntry>>>> {
+          Stream<List<MappedSinkRecord<PutPartnerEventsRequestEntry>>>> {
 
     @Override
     public Supplier<Accumulator> supplier() {
@@ -84,7 +85,7 @@ public class DefaultEventBridgeBatching implements EventBridgeBatchingStrategy {
     }
 
     @Override
-    public BiConsumer<Accumulator, MappedSinkRecord<PutEventsRequestEntry>> accumulator() {
+    public BiConsumer<Accumulator, MappedSinkRecord<PutPartnerEventsRequestEntry>> accumulator() {
       return Accumulator::accumulate;
     }
 
@@ -96,7 +97,8 @@ public class DefaultEventBridgeBatching implements EventBridgeBatchingStrategy {
     }
 
     @Override
-    public Function<Accumulator, Stream<List<MappedSinkRecord<PutEventsRequestEntry>>>> finisher() {
+    public Function<Accumulator, Stream<List<MappedSinkRecord<PutPartnerEventsRequestEntry>>>>
+        finisher() {
       return Accumulator::finish;
     }
 
@@ -111,7 +113,8 @@ public class DefaultEventBridgeBatching implements EventBridgeBatchingStrategy {
     private static final int MAX_BATCH_SIZE_BYTES = 256 * 1024;
     private static final int MAX_BATCH_ITEMS = 10;
 
-    private final List<List<MappedSinkRecord<PutEventsRequestEntry>>> batches = new ArrayList<>();
+    private final List<List<MappedSinkRecord<PutPartnerEventsRequestEntry>>> batches =
+        new ArrayList<>();
     private int actualBatchSize = 0;
     private int index = 0;
 
@@ -119,7 +122,7 @@ public class DefaultEventBridgeBatching implements EventBridgeBatchingStrategy {
       batches.add(new ArrayList<>());
     }
 
-    void accumulate(final MappedSinkRecord<PutEventsRequestEntry> item) {
+    void accumulate(final MappedSinkRecord<PutPartnerEventsRequestEntry> item) {
 
       var itemSize = getSize(item.getValue());
       if (itemSize > MAX_BATCH_SIZE_BYTES) {
@@ -143,13 +146,13 @@ public class DefaultEventBridgeBatching implements EventBridgeBatchingStrategy {
       batches.get(index).add(item);
     }
 
-    Stream<List<MappedSinkRecord<PutEventsRequestEntry>>> finish() {
+    Stream<List<MappedSinkRecord<PutPartnerEventsRequestEntry>>> finish() {
       return ((batches.size() == 1) && (actualBatchSize == 0)) ? Stream.empty() : batches.stream();
     }
   }
 
   // https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-putevent-size.html
-  static int getSize(PutEventsRequestEntry entry) {
+  static int getSize(PutPartnerEventsRequestEntry entry) {
     var size = 0;
     if (entry.time() != null) {
       size += 14;
@@ -165,9 +168,6 @@ public class DefaultEventBridgeBatching implements EventBridgeBatchingStrategy {
           size += resource.getBytes(UTF_8).length;
         }
       }
-    }
-    if (entry.traceHeader() != null) {
-      size += entry.traceHeader().getBytes(UTF_8).length;
     }
     return size;
   }

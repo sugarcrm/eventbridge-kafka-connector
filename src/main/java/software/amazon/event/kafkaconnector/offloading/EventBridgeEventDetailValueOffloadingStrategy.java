@@ -5,7 +5,7 @@
 package software.amazon.event.kafkaconnector.offloading;
 
 import java.util.List;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
 import software.amazon.event.kafkaconnector.mapping.EventBridgeMappingResult;
 import software.amazon.event.kafkaconnector.util.MappedSinkRecord;
 
@@ -13,5 +13,5 @@ import software.amazon.event.kafkaconnector.util.MappedSinkRecord;
 public interface EventBridgeEventDetailValueOffloadingStrategy {
 
   EventBridgeMappingResult apply(
-      List<MappedSinkRecord<PutEventsRequestEntry>> putEventsRequestEntries);
+      List<MappedSinkRecord<PutPartnerEventsRequestEntry>> putEventsRequestEntries);
 }

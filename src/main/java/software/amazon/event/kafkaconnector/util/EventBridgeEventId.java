@@ -4,7 +4,7 @@
  */
 package software.amazon.event.kafkaconnector.util;
 
-import software.amazon.awssdk.services.eventbridge.model.PutEventsResultEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsResultEntry;
 
 public class EventBridgeEventId {
 
@@ -14,7 +14,7 @@ public class EventBridgeEventId {
     this.value = value;
   }
 
-  public static EventBridgeEventId of(final PutEventsResultEntry entry) {
+  public static EventBridgeEventId of(final PutPartnerEventsResultEntry entry) {
     return new EventBridgeEventId(entry.eventId());
   }
 

@@ -12,7 +12,7 @@ public class DefaultTimeMapper implements TimeMapper {
   @Override
   public Instant getTime(SinkRecord sinkRecord) {
     // As described in AWS documentation
-    // https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_PutEventsRequestEntry.html
+    // https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_PutPartnerEventsRequestEntry.html
     // If no timestamp is provided, the timestamp of the PutEvents call is used.
     return null;
   }

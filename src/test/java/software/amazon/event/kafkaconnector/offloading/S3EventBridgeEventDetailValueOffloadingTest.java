@@ -69,7 +69,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.skyscreamer.jsonassert.JSONAssert;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
@@ -766,7 +766,7 @@ class S3EventBridgeEventDetailValueOffloadingTest {
     };
   }
 
-  private List<MappedSinkRecord<PutEventsRequestEntry>> withDefaultEventBridgeMapperMap(
+  private List<MappedSinkRecord<PutPartnerEventsRequestEntry>> withDefaultEventBridgeMapperMap(
       final EventBridgeSinkConfig config, final SinkRecord... values) {
     var mapper = new DefaultEventBridgeMapper(config);
     var result = mapper.map(List.of(values));
