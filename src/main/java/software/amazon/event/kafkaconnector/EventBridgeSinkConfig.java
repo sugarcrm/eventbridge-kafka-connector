@@ -27,6 +27,8 @@ public class EventBridgeSinkConfig extends AbstractConfig {
   static final String AWS_ENDPOINT_URI_DOC =
       "An optional service endpoint URI used to connect to EventBridge.";
   static final String AWS_EVENTBUS_ARN_CONFIG = "aws.eventbridge.eventbus.arn";
+  static final String AWS_PARTNER_EVENT_SOURCE_NAME_CONFIG =
+      "aws.eventbridge.partner.event.source.name";
   static final String AWS_EVENTBUS_GLOBAL_ENDPOINT_ID_CONFIG =
       "aws.eventbridge.eventbus.global.endpoint.id";
   static final String AWS_RETRIES_CONFIG = "aws.eventbridge.retries.max";
@@ -51,6 +53,8 @@ public class EventBridgeSinkConfig extends AbstractConfig {
       "The unique ID of this connector (used in the event source field to uniquely identify a connector).";
   private static final String AWS_REGION_DOC = "The AWS region of the event bus.";
   private static final String AWS_EVENTBUS_ARN_DOC = "The ARN of the target event bus.";
+  private static final String AWS_PARTNER_EVENT_SOURCE_NAME_DOC =
+      "The name of the partner event source.";
   private static final String AWS_EVENTBUS_ENDPOINT_ID_DOC =
       "An optional global endpoint ID of the target event bus.";
   private static final int AWS_RETRIES_DEFAULT = 2;
@@ -101,6 +105,7 @@ public class EventBridgeSinkConfig extends AbstractConfig {
   public final String connectorId;
   public final String region;
   public final String eventBusArn;
+  public final String partnerEventSourceName;
   public final String endpointID;
   public final String endpointURI;
   public final String awsCredentialsProviderClass;
@@ -123,6 +128,7 @@ public class EventBridgeSinkConfig extends AbstractConfig {
     this.connectorId = getString(AWS_CONNECTOR_ID_CONFIG);
     this.region = getString(AWS_REGION_CONFIG);
     this.eventBusArn = getString(AWS_EVENTBUS_ARN_CONFIG);
+    this.partnerEventSourceName = getString(AWS_PARTNER_EVENT_SOURCE_NAME_CONFIG);
     this.endpointID = getString(AWS_EVENTBUS_GLOBAL_ENDPOINT_ID_CONFIG);
     this.endpointURI = getString(AWS_ENDPOINT_URI_CONFIG);
     this.awsCredentialsProviderClass = getString(AWS_CREDENTIAL_PROVIDER_CLASS);
@@ -148,12 +154,13 @@ public class EventBridgeSinkConfig extends AbstractConfig {
       detailType = detailTypes.get(0);
     }
     log.info(
-        "EventBridge properties: connectorId={} eventBusArn={} eventBusRegion={} eventBusEndpointURI={} "
+        "EventBridge properties: connectorId={} eventBusArn={} partnerEventSourceName={} eventBusRegion={} eventBusEndpointURI={} "
             + "eventBusMaxRetries={} eventBusRetriesDelay={} eventBusResources={} "
             + "eventBusEndpointID={} roleArn={} roleSessionName={} roleExternalID={} "
             + "offloadingDefaultS3Bucket={} offloadingDefaultS3Prefix={} offloadingDefaultFieldRef={} detailTypeMapperClass={} timeMapperClass={}",
         connectorId,
         eventBusArn,
+        partnerEventSourceName,
         region,
         endpointURI,
         maxRetries,
@@ -179,7 +186,13 @@ public class EventBridgeSinkConfig extends AbstractConfig {
   private static void addParams(final ConfigDef configDef) {
     configDef.define(AWS_CONNECTOR_ID_CONFIG, Type.STRING, Importance.HIGH, AWS_CONNECTOR_ID_DOC);
     configDef.define(AWS_REGION_CONFIG, Type.STRING, Importance.HIGH, AWS_REGION_DOC);
-    configDef.define(AWS_EVENTBUS_ARN_CONFIG, Type.STRING, Importance.HIGH, AWS_EVENTBUS_ARN_DOC);
+    configDef.define(AWS_EVENTBUS_ARN_CONFIG, Type.STRING, "", Importance.HIGH, AWS_EVENTBUS_ARN_DOC);
+    configDef.define(
+        AWS_PARTNER_EVENT_SOURCE_NAME_CONFIG,
+        Type.STRING,
+        "",
+        Importance.HIGH,
+        AWS_PARTNER_EVENT_SOURCE_NAME_DOC);
     configDef.define(
         AWS_ENDPOINT_URI_CONFIG, Type.STRING, "", Importance.MEDIUM, AWS_ENDPOINT_URI_DOC);
     configDef.define(
