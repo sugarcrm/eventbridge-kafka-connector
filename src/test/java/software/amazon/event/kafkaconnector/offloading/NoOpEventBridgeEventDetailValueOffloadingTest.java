@@ -13,7 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
 import software.amazon.event.kafkaconnector.util.MappedSinkRecord;
 
 class NoOpEventBridgeEventDetailValueOffloadingTest {
@@ -22,7 +22,7 @@ class NoOpEventBridgeEventDetailValueOffloadingTest {
       new NoOpEventBridgeEventDetailValueOffloading();
 
   @Test
-  @DisplayName("result of successful offloaded PutEventsRequestEntry should be empty")
+  @DisplayName("result of successful offloaded PutPartnerEventsRequestEntry should be empty")
   public void keepEmpty() {
     var actual = strategy.apply(emptyList());
 
@@ -31,12 +31,12 @@ class NoOpEventBridgeEventDetailValueOffloadingTest {
   }
 
   @ParameterizedTest(name = "with size {0}")
-  @DisplayName("result of successful offloaded PutEventsRequestEntry should be unmodified")
+  @DisplayName("result of successful offloaded PutPartnerEventsRequestEntry should be unmodified")
   @ValueSource(longs = {1, 10, 100})
   public void keepSame(long size) {
 
     var items =
-        Stream.generate(() -> new MappedSinkRecord<PutEventsRequestEntry>(null, null))
+        Stream.generate(() -> new MappedSinkRecord<PutPartnerEventsRequestEntry>(null, null))
             .limit(size)
             .collect(toList());
 

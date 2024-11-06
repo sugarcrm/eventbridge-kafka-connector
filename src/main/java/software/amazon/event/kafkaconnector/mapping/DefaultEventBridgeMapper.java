@@ -12,7 +12,7 @@ import static software.amazon.event.kafkaconnector.EventBridgeResult.success;
 
 import java.util.List;
 import org.apache.kafka.connect.sink.SinkRecord;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
 import software.amazon.event.kafkaconnector.EventBridgeResult;
 import software.amazon.event.kafkaconnector.EventBridgeSinkConfig;
 
@@ -48,13 +48,12 @@ public class DefaultEventBridgeMapper implements EventBridgeMapper {
     return new EventBridgeMappingResult(successfulMappedRecords, failedMappedRecords);
   }
 
-  private EventBridgeResult<PutEventsRequestEntry> createPutEventsEntry(SinkRecord record) {
+  private EventBridgeResult<PutPartnerEventsRequestEntry> createPutEventsEntry(SinkRecord record) {
     try {
       return success(
           record,
-          PutEventsRequestEntry.builder()
-              .eventBusName(config.eventBusArn)
-              .source(sourcePrefix + config.connectorId)
+          PutPartnerEventsRequestEntry.builder()
+              .source(config.partnerEventSourceName)
               .detailType(detailTypeMapper.getDetailType(record))
               .resources(config.resources)
               .detail(jsonMapper.createJsonPayload(record))

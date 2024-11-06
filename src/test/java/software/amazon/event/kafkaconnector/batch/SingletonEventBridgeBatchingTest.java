@@ -17,14 +17,14 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
 import software.amazon.event.kafkaconnector.util.MappedSinkRecord;
 
 public class SingletonEventBridgeBatchingTest {
 
   private static final EventBridgeBatchingStrategy strategy = new SingletonEventBridgeBatching();
 
-  private static final Function<List<MappedSinkRecord<PutEventsRequestEntry>>, List<String>>
+  private static final Function<List<MappedSinkRecord<PutPartnerEventsRequestEntry>>, List<String>>
       sinkRecordId =
           xs ->
               xs.stream()
@@ -46,9 +46,9 @@ public class SingletonEventBridgeBatchingTest {
     assertThat(strategy.apply(input)).extracting(sinkRecordId).hasSameElementsAs(expected);
   }
 
-  private MappedSinkRecord<PutEventsRequestEntry> createMappedSinkRecord(String id) {
+  private MappedSinkRecord<PutPartnerEventsRequestEntry> createMappedSinkRecord(String id) {
     return new MappedSinkRecord<>(
-        createTestRecordWithId(id), PutEventsRequestEntry.builder().build());
+        createTestRecordWithId(id), PutPartnerEventsRequestEntry.builder().build());
   }
 
   private SinkRecord createTestRecordWithId(String id) {
