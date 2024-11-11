@@ -31,7 +31,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -132,7 +132,7 @@ public class S3EventBridgeEventDetailValueOffloading
           format("JSON Path must be definite but '%s' is not.", value));
     }
     // rewrite $.detail -> $,
-    // because PutEventsRequestEntry#detail is the sub document of $.detail
+    // because PutPartnerEventsRequestEntry#detail is the sub document of $.detail
     return JsonPath.compile("$" + jsonPath.getPath().substring("$['detail']".length()));
   }
 
@@ -142,7 +142,7 @@ public class S3EventBridgeEventDetailValueOffloading
 
   @Override
   public EventBridgeMappingResult apply(
-      final List<MappedSinkRecord<PutEventsRequestEntry>> putEventsRequestEntries) {
+      final List<MappedSinkRecord<PutPartnerEventsRequestEntry>> putEventsRequestEntries) {
 
     var result =
         putEventsRequestEntries.stream()
@@ -155,8 +155,8 @@ public class S3EventBridgeEventDetailValueOffloading
     return new EventBridgeMappingResult(success, errors);
   }
 
-  private EventBridgeResult<PutEventsRequestEntry> apply(
-      final MappedSinkRecord<PutEventsRequestEntry> item) {
+  private EventBridgeResult<PutPartnerEventsRequestEntry> apply(
+      final MappedSinkRecord<PutPartnerEventsRequestEntry> item) {
 
     var sinkRecord = item.getSinkRecord();
     var putEventsRequestEntry = item.getValue();

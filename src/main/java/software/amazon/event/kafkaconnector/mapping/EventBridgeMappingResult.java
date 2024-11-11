@@ -7,17 +7,17 @@ package software.amazon.event.kafkaconnector.mapping;
 import static java.util.stream.Collectors.toList;
 
 import java.util.List;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
 import software.amazon.event.kafkaconnector.EventBridgeResult;
 import software.amazon.event.kafkaconnector.util.MappedSinkRecord;
 
 public class EventBridgeMappingResult {
 
-  public List<MappedSinkRecord<PutEventsRequestEntry>> success;
+  public List<MappedSinkRecord<PutPartnerEventsRequestEntry>> success;
   public List<MappedSinkRecord<EventBridgeResult.Error>> errors;
 
   public EventBridgeMappingResult(
-      List<MappedSinkRecord<PutEventsRequestEntry>> success,
+      List<MappedSinkRecord<PutPartnerEventsRequestEntry>> success,
       List<MappedSinkRecord<EventBridgeResult.Error>> errors) {
     this.success = success;
     this.errors = errors;

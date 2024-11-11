@@ -32,8 +32,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry.Builder;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry.Builder;
 import software.amazon.event.kafkaconnector.util.MappedSinkRecord;
 
 class DefaultEventBridgeBatchingTest {
@@ -59,7 +59,7 @@ class DefaultEventBridgeBatchingTest {
   }
 
   @Nested
-  @DisplayName("getSize(PutEventsRequestEntry)")
+  @DisplayName("getSize(PutPartnerEventsRequestEntry)")
   class Size {
 
     @Test
@@ -67,10 +67,10 @@ class DefaultEventBridgeBatchingTest {
     public void requiresAttributeSource() {
       assertThrows(
           NullPointerException.class,
-          () -> getSize(PutEventsRequestEntry.builder().detailType("detailType").build()));
+          () -> getSize(PutPartnerEventsRequestEntry.builder().detailType("detailType").build()));
       assertThat(
               getSize(
-                  PutEventsRequestEntry.builder()
+                  PutPartnerEventsRequestEntry.builder()
                       .source("source")
                       .detailType("detailType")
                       .build()))
@@ -82,10 +82,10 @@ class DefaultEventBridgeBatchingTest {
     public void requiresAttributeDetailType() {
       assertThrows(
           NullPointerException.class,
-          () -> getSize(PutEventsRequestEntry.builder().source("source").build()));
+          () -> getSize(PutPartnerEventsRequestEntry.builder().source("source").build()));
       assertThat(
               getSize(
-                  PutEventsRequestEntry.builder()
+                  PutPartnerEventsRequestEntry.builder()
                       .source("source")
                       .detailType("detailType")
                       .build()))
@@ -97,7 +97,7 @@ class DefaultEventBridgeBatchingTest {
     public void attributeTime() {
       assertThat(
               getSize(
-                  PutEventsRequestEntry.builder()
+                  PutPartnerEventsRequestEntry.builder()
                       .time(Instant.now())
                       .source("")
                       .detailType("")
@@ -111,7 +111,7 @@ class DefaultEventBridgeBatchingTest {
         "software.amazon.event.kafkaconnector.batch.DefaultEventBridgeBatchingTest#attributeContributionArguments")
     public void attributeContribution(String attribute, String value) {
 
-      final Builder entry = PutEventsRequestEntry.builder().source("").detailType("");
+      final Builder entry = PutPartnerEventsRequestEntry.builder().source("").detailType("");
       switch (attribute) {
         case "source":
           entry.source(value);
@@ -125,9 +125,6 @@ class DefaultEventBridgeBatchingTest {
         case "resource":
           entry.resources(value);
           break;
-        case "traceHeader":
-          entry.traceHeader(value);
-          break;
       }
 
       assertThat(getSize(entry.build())).isEqualTo(value.getBytes(UTF_8).length);
@@ -139,7 +136,7 @@ class DefaultEventBridgeBatchingTest {
     public void multipleResource(int size) {
       assertThat(
               getSize(
-                  PutEventsRequestEntry.builder()
+                  PutPartnerEventsRequestEntry.builder()
                       .source("")
                       .detailType("")
                       .resources(
@@ -149,10 +146,10 @@ class DefaultEventBridgeBatchingTest {
     }
 
     @ParameterizedTest(name = "of {0} bytes")
-    @DisplayName("generated test 'PutEventsRequestEntry' object should have expected size")
+    @DisplayName("generated test 'PutPartnerEventsRequestEntry' object should have expected size")
     @ValueSource(ints = {1024, 10 * 1024, 100 * 1024, 256 * 1024})
     public void shouldHaveExpectedSize(int size) {
-      assertThat(getSize(createEntryOfByteSize(size, eventBusName("any")))).isEqualTo(size);
+      assertThat(getSize(createEntryOfByteSize(size, source("any")))).isEqualTo(size);
     }
   }
 
@@ -160,9 +157,10 @@ class DefaultEventBridgeBatchingTest {
   @DisplayName("should generate batches either up to 256kb or maximum 10 items")
   @MethodSource("batchingArguments")
   public void shouldGenerateBatches(
-      Stream<MappedSinkRecord<PutEventsRequestEntry>> records, Iterable<List<String>> expected) {
+      Stream<MappedSinkRecord<PutPartnerEventsRequestEntry>> records,
+      Iterable<List<String>> expected) {
     assertThat(strategy.apply(records))
-        .extracting(it -> it.stream().map(e -> e.getValue().eventBusName()).collect(toList()))
+        .extracting(it -> it.stream().map(e -> e.getValue().source()).collect(toList()))
         .asList()
         .containsExactlyElementsOf(expected);
   }
@@ -172,11 +170,11 @@ class DefaultEventBridgeBatchingTest {
       "should generate batches with single record for the item wich exceeds maximum size of 256kb")
   @MethodSource("sizeExceedingBatchingArguments")
   public void shouldGenerateBatchesWithSingleRecord(
-      Stream<MappedSinkRecord<PutEventsRequestEntry>> records,
+      Stream<MappedSinkRecord<PutPartnerEventsRequestEntry>> records,
       String title,
       Iterable<List<String>> expected) {
     assertThat(strategy.apply(records))
-        .extracting(it -> it.stream().map(e -> e.getValue().eventBusName()).collect(toList()))
+        .extracting(it -> it.stream().map(e -> e.getValue().source()).collect(toList()))
         .asList()
         .containsExactlyElementsOf(expected);
   }
@@ -185,10 +183,9 @@ class DefaultEventBridgeBatchingTest {
   @DisplayName("should log WARN message if single record exceeds maximum size of 256kb")
   public void shouldLogWarnMessage() {
     var sinkRecord = new SinkRecord("topic", 0, STRING_SCHEMA, "key", null, "", 0);
-    final Stream<MappedSinkRecord<PutEventsRequestEntry>> records =
+    final Stream<MappedSinkRecord<PutPartnerEventsRequestEntry>> records =
         Stream.of(
-            new MappedSinkRecord<>(
-                sinkRecord, createEntryOfByteSize(256 * 1024 + 1, eventBusName("b"))));
+            new MappedSinkRecord<>(sinkRecord, createEntryOfByteSize(256 * 1024 + 1, source("b"))));
 
     assertThat(strategy.apply(records)).isNotEmpty();
     assertThat(loggingEvents)
@@ -201,10 +198,10 @@ class DefaultEventBridgeBatchingTest {
   @Test
   @DisplayName("stream must not be parallel")
   public void shouldNotBeParallel() {
-    final Stream<MappedSinkRecord<PutEventsRequestEntry>> records =
+    final Stream<MappedSinkRecord<PutPartnerEventsRequestEntry>> records =
         Stream.of(
-                new MappedSinkRecord<>(null, createEntryOfByteSize(32, eventBusName("a"))),
-                new MappedSinkRecord<>(null, createEntryOfByteSize(32, eventBusName("b"))))
+                new MappedSinkRecord<>(null, createEntryOfByteSize(32, source("a"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(32, source("b"))))
             .parallel();
 
     final IllegalArgumentException exception =
@@ -213,7 +210,7 @@ class DefaultEventBridgeBatchingTest {
   }
 
   public static Stream<Arguments> attributeContributionArguments() {
-    return Stream.of("source", "detailType", "detail", "resource", "traceHeader")
+    return Stream.of("source", "detailType", "detail", "resource")
         .flatMap(
             attribute ->
                 Stream.of("", "!", "µ", "Ⅲ", "\uD83D\uDC4D")
@@ -224,27 +221,25 @@ class DefaultEventBridgeBatchingTest {
     return Stream.of(
         Arguments.of(Stream.empty(), emptyList()),
         Arguments.of(
-            Stream.of(new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("a")))),
+            Stream.of(new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("a")))),
             List.of(List.of("a"))),
         Arguments.of(
             Stream.generate(
-                    () ->
-                        new MappedSinkRecord<>(
-                            null, createEntryOfByteSize(1024, eventBusName("a"))))
+                    () -> new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("a"))))
                 .limit(11),
             List.of(List.of("a", "a", "a", "a", "a", "a", "a", "a", "a", "a"), List.of("a"))),
         Arguments.of(
             Stream.of(
-                new MappedSinkRecord<>(null, createEntryOfByteSize(255 * 1024, eventBusName("a"))),
-                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("b"))),
-                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("c")))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(255 * 1024, source("a"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("b"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("c")))),
             List.of(List.of("a", "b"), List.of("c"))),
         Arguments.of(
             Stream.of(
-                new MappedSinkRecord<>(null, createEntryOfByteSize(256 * 1024, eventBusName("a"))),
-                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("b"))),
-                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("c"))),
-                new MappedSinkRecord<>(null, createEntryOfByteSize(256 * 1024, eventBusName("d")))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(256 * 1024, source("a"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("b"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("c"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(256 * 1024, source("d")))),
             List.of(List.of("a"), List.of("b", "c"), List.of("d"))));
   }
 
@@ -254,46 +249,45 @@ class DefaultEventBridgeBatchingTest {
         Arguments.of(
             Stream.of(
                 new MappedSinkRecord<>(
-                    sinkRecord, createEntryOfByteSize(256 * 1024 + 1, eventBusName("a"))),
-                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("b"))),
-                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("c")))),
+                    sinkRecord, createEntryOfByteSize(256 * 1024 + 1, source("a"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("b"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("c")))),
             "✗✓✓",
             List.of(List.of("a"), List.of("b", "c"))),
         Arguments.of(
             Stream.of(
-                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("a"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("a"))),
                 new MappedSinkRecord<>(
-                    sinkRecord, createEntryOfByteSize(256 * 1024 + 1, eventBusName("b"))),
-                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("c")))),
+                    sinkRecord, createEntryOfByteSize(256 * 1024 + 1, source("b"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("c")))),
             "✓✗✓",
             List.of(List.of("a"), List.of("b"), List.of("c"))),
         Arguments.of(
             Stream.of(
-                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("a"))),
-                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, eventBusName("b"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("a"))),
+                new MappedSinkRecord<>(null, createEntryOfByteSize(1024, source("b"))),
                 new MappedSinkRecord<>(
-                    sinkRecord, createEntryOfByteSize(256 * 1024 + 1, eventBusName("c")))),
+                    sinkRecord, createEntryOfByteSize(256 * 1024 + 1, source("c")))),
             "✓✓✗",
             List.of(List.of("a", "b"), List.of("c"))));
   }
 
-  static String eventBusName(String value) {
+  static String source(String value) {
     return value;
   }
 
-  static PutEventsRequestEntry createEntryOfByteSize(int size, String eventBusName) {
+  static PutPartnerEventsRequestEntry createEntryOfByteSize(int size, String source) {
     if (size < 31) throw new IllegalArgumentException("size must be >= 30");
-    return PutEventsRequestEntry.builder()
-        .eventBusName(eventBusName)
+    return PutPartnerEventsRequestEntry.builder()
         .time(Instant.now())
-        .source("source")
+        .source(source)
         .detailType("detailType")
         .detail(
             "0"
                 .repeat(
                     size
                         - 14 /*time*/
-                        - 6 /*UTF-8 bytes of source*/
+                        - source.length() /*UTF-8 bytes of source*/
                         - 10 /* UTF-8 bytes of detailType*/))
         .build();
   }

@@ -36,9 +36,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.EventBridgeException;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsResponse;
 
 @ExtendWith(MockitoExtension.class)
 public class EventBridgeSinkTaskTest {
@@ -66,17 +66,17 @@ public class EventBridgeSinkTaskTest {
   @DisplayName("should send records successfully")
   public void sendSuccessfully() {
     var firstResponse =
-        PutEventsResponse.builder()
+        PutPartnerEventsResponse.builder()
             .failedEntryCount(0)
-            .entries(OfPutEventsResultEntry.withIdsIn(rangeClosed(1, 10)))
+            .entries(OfPutPartnerEventsResultEntry.withIdsIn(rangeClosed(1, 10)))
             .build();
     var secondResponse =
-        PutEventsResponse.builder()
+        PutPartnerEventsResponse.builder()
             .failedEntryCount(0)
-            .entries(OfPutEventsResultEntry.withIdsIn(rangeClosed(11, 15)))
+            .entries(OfPutPartnerEventsResultEntry.withIdsIn(rangeClosed(11, 15)))
             .build();
 
-    when(eventBridgeAsyncClient.putEvents(any(PutEventsRequest.class)))
+    when(eventBridgeAsyncClient.putPartnerEvents(any(PutPartnerEventsRequest.class)))
         .thenReturn(completedFuture(firstResponse))
         .thenReturn(completedFuture(secondResponse));
 
@@ -87,8 +87,8 @@ public class EventBridgeSinkTaskTest {
 
     task.put(OfSinkRecord.withIdsIn(rangeClosed(1, 15)));
 
-    var captor = ArgumentCaptor.forClass(PutEventsRequest.class);
-    verify(eventBridgeAsyncClient, times(2)).putEvents(captor.capture());
+    var captor = ArgumentCaptor.forClass(PutPartnerEventsRequest.class);
+    verify(eventBridgeAsyncClient, times(2)).putPartnerEvents(captor.capture());
 
     assertThat(captor.getAllValues())
         .extracting(fromPutEventsRequestDetail(detail -> detail.get("value").get("id").asText()))
@@ -101,17 +101,17 @@ public class EventBridgeSinkTaskTest {
   @DisplayName("should resend only retryable failed records")
   public void resendRetryable() {
     var firstResponse =
-        PutEventsResponse.builder()
+        PutPartnerEventsResponse.builder()
             .failedEntryCount(0)
-            .entries(OfPutEventsResultEntry.withIdsIn(rangeClosed(1, 10)))
+            .entries(OfPutPartnerEventsResultEntry.withIdsIn(rangeClosed(1, 10)))
             .build();
     var secondResponse =
-        PutEventsResponse.builder()
+        PutPartnerEventsResponse.builder()
             .failedEntryCount(0)
-            .entries(OfPutEventsResultEntry.withIdsIn(rangeClosed(11, 15)))
+            .entries(OfPutPartnerEventsResultEntry.withIdsIn(rangeClosed(11, 15)))
             .build();
 
-    when(eventBridgeAsyncClient.putEvents(any(PutEventsRequest.class)))
+    when(eventBridgeAsyncClient.putPartnerEvents(any(PutPartnerEventsRequest.class)))
         .thenReturn(completedFuture(firstResponse))
         .thenThrow(
             AwsServiceException.builder()
@@ -126,8 +126,8 @@ public class EventBridgeSinkTaskTest {
 
     task.put(OfSinkRecord.withIdsIn(rangeClosed(1, 15)));
 
-    var captor = ArgumentCaptor.forClass(PutEventsRequest.class);
-    verify(eventBridgeAsyncClient, times(3)).putEvents(captor.capture());
+    var captor = ArgumentCaptor.forClass(PutPartnerEventsRequest.class);
+    verify(eventBridgeAsyncClient, times(3)).putPartnerEvents(captor.capture());
 
     assertThat(captor.getAllValues())
         .extracting(fromPutEventsRequestDetail(detail -> detail.get("value").get("id").asText()))
@@ -141,12 +141,12 @@ public class EventBridgeSinkTaskTest {
   @DisplayName("should not retry size exceeding record")
   public void shouldNotRetry() {
     var secondResponse =
-        PutEventsResponse.builder()
+        PutPartnerEventsResponse.builder()
             .failedEntryCount(0)
-            .entries(OfPutEventsResultEntry.withIdsIn(rangeClosed(2, 10)))
+            .entries(OfPutPartnerEventsResultEntry.withIdsIn(rangeClosed(2, 10)))
             .build();
 
-    when(eventBridgeAsyncClient.putEvents(any(PutEventsRequest.class)))
+    when(eventBridgeAsyncClient.putPartnerEvents(any(PutPartnerEventsRequest.class)))
         .thenThrow(
             AwsServiceException.builder()
                 .cause(EventBridgeException.builder().statusCode(413).build())
@@ -172,8 +172,8 @@ public class EventBridgeSinkTaskTest {
 
     task.put(records);
 
-    var captor = ArgumentCaptor.forClass(PutEventsRequest.class);
-    verify(eventBridgeAsyncClient, times(2)).putEvents(captor.capture());
+    var captor = ArgumentCaptor.forClass(PutPartnerEventsRequest.class);
+    verify(eventBridgeAsyncClient, times(2)).putPartnerEvents(captor.capture());
 
     assertThat(captor.getAllValues())
         .extracting(fromPutEventsRequestDetail(detail -> detail.get("value").get("id").asText()))
@@ -181,11 +181,11 @@ public class EventBridgeSinkTaskTest {
             List.of("#".repeat(1024 * 256)), List.of("2", "3", "4", "5", "6", "7", "8", "9", "10"));
   }
 
-  private <T> Function<PutEventsRequest, List<T>> fromPutEventsRequestDetail(
+  private <T> Function<PutPartnerEventsRequest, List<T>> fromPutEventsRequestDetail(
       Function<JsonNode, T> f) {
-    return (PutEventsRequest request) ->
+    return (PutPartnerEventsRequest request) ->
         request.entries().stream()
-            .map(PutEventsRequestEntry::detail)
+            .map(PutPartnerEventsRequestEntry::detail)
             .map(
                 detail -> {
                   try {

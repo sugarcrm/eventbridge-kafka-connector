@@ -23,7 +23,7 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsResultEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsResultEntry;
 
 public abstract class TestUtils {
 
@@ -54,14 +54,17 @@ public abstract class TestUtils {
     }
   }
 
-  public abstract static class OfPutEventsResultEntry {
+  public abstract static class OfPutPartnerEventsResultEntry {
 
-    private OfPutEventsResultEntry() {}
+    private OfPutPartnerEventsResultEntry() {}
 
-    public static List<PutEventsResultEntry> withIdsIn(IntStream range) {
+    public static List<PutPartnerEventsResultEntry> withIdsIn(IntStream range) {
       return range
           .mapToObj(
-              id -> PutEventsResultEntry.builder().eventId(String.format("eventId:%d", id)).build())
+              id ->
+                  PutPartnerEventsResultEntry.builder()
+                      .eventId(String.format("eventId:%d", id))
+                      .build())
           .collect(toList());
     }
   }

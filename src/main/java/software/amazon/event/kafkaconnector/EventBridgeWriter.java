@@ -35,9 +35,9 @@ import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.EventBridgeException;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutPartnerEventsResponse;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.event.kafkaconnector.auth.EventBridgeAwsCredentialsProviderFactory;
@@ -191,19 +191,16 @@ public class EventBridgeWriter {
   }
 
   private Stream<EventBridgeResult<EventBridgeEventId>> sendToEventBridge(
-      List<MappedSinkRecord<PutEventsRequestEntry>> items) {
+      List<MappedSinkRecord<PutPartnerEventsRequestEntry>> items) {
     try {
       var requestBuilder =
-          PutEventsRequest.builder()
+          PutPartnerEventsRequest.builder()
               .entries(items.stream().map(MappedSinkRecord::getValue).collect(toList()));
 
-      if (config.endpointID != null && !config.endpointID.isEmpty()) {
-        requestBuilder.endpointId(config.endpointID);
-      }
       var request = requestBuilder.build();
 
       log.trace("Sending request to EventBridge: {}", request);
-      var response = ebClient.putEvents(request).get(SDK_TIMEOUT, MILLISECONDS);
+      var response = ebClient.putPartnerEvents(request).get(SDK_TIMEOUT, MILLISECONDS);
       log.trace("putEvents response: {}", response.entries());
 
       if (response.failedEntryCount() > 0) {
@@ -241,7 +238,8 @@ public class EventBridgeWriter {
   }
 
   private Stream<EventBridgeResult<EventBridgeEventId>> mapResponseToResult(
-      List<MappedSinkRecord<PutEventsRequestEntry>> request, PutEventsResponse response) {
+      List<MappedSinkRecord<PutPartnerEventsRequestEntry>> request,
+      PutPartnerEventsResponse response) {
     return IntStream.range(0, request.size())
         .mapToObj(
             index -> {
